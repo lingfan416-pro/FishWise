@@ -1,23 +1,19 @@
-# FishWise Frontend Baseline
+# FishWise
 
-This is the corrected frontend-only baseline for the FishWise MVP.
+## Project Overview
 
-## Stack
-- React
-- Vite
+## Features
 
-## Run locally
+## Tech Stack
 
-```bash
-npm install
-npm run dev
-```
+## Project Structure
 
-## Current scope
-- Preset fishing spot selection
-- Dropdown inputs for time of day, weather, wind level, and optional target fish
-- Simple local validation
-- Mock recommendation card
+## How to Run the Frontend
 
-## Notes
-This version is frontend-only and uses local mock recommendation data. Backend integration will be added later.
+## How to Run the Backend
+
+## Recommendation Flow
+
+## MVP Limitations
+
+## Future Improvements
