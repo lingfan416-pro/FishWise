@@ -53,19 +53,6 @@ function findSpotById(locationId) {
   return fishingSpots.find((spot) => spot.id === locationId) || null;
 }
 
-// FishWise integration bug
-//
-// The frontend RecommendationCard expects:
-// explanation
-//
-// But the backend response currently returns:
-// reason
-//
-// This causes the recommendation text to be missing or undefined in the UI.
-//
-// Please fix the integration bug in the simplest clean way.
-
-
 function getRecommendation(body) {
   const spot = findSpotById(body.location);
   const waterType = spot.waterType;
@@ -110,7 +97,7 @@ function buildApiRecommendation({ spot, targetFish, recommendation, usedFallback
     lineDepth: recommendation.lineDepth,
     sinkerWeight: recommendation.sinkerWeight,
     floatType: recommendation.floatType,
-  //  explanation: recommendation.explanation,
+    explanation: recommendation.explanation,
     usedFallback
   };
 }
@@ -173,6 +160,11 @@ function buildFallbackRecommendation({ spot, targetFish, windLevel }) {
     sinkerWeight = "heavy";
   }
 
+  const explanation =
+    typeof baseSetup.explanation === "string"
+      ? baseSetup.explanation
+      : `No exact rule matched these choices. Here is a simple starting setup for ${baseSetup.recommendedFish} at ${spot.name}.`;
+
   return {
     selectedSpotName: spot.name,
     waterType: spot.waterType,
@@ -182,7 +174,7 @@ function buildFallbackRecommendation({ spot, targetFish, windLevel }) {
     lineDepth: baseSetup.lineDepth,
     sinkerWeight,
     floatType: baseSetup.floatType,
-  //  explanation: fallbackRecommendation.explanation,
+    explanation,
     usedFallback: true
   };
 }

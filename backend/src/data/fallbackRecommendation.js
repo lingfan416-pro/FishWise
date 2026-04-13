@@ -1,3 +1,4 @@
+/** Used when even the per-fish fallback map cannot pick a setup (rare edge case). */
 const fallbackRecommendation = {
   recommendedFish: "kahawai",
   bait: "small lure",
@@ -5,8 +6,6 @@ const fallbackRecommendation = {
   sinkerWeight: "medium",
   floatType: "standard bobber",
   explanation:
-    "No exact rule matched, so FishWise returned a simple beginner-friendly fallback setup.",
-  reason:
     "No exact rule matched, so FishWise returned a simple beginner-friendly fallback setup."
 };
 
