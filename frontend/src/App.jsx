@@ -2,8 +2,6 @@ import { useState } from "react";
 import "./App.css";
 import FishingForm from "./components/FishingForm";
 import RecommendationCard from "./components/RecommendationCard";
-import { fishingSpots } from "./data/fishingSpots";
-import { mockRecommendation } from "./data/mockRecommendation";
 
 function App() {
   const [formData, setFormData] = useState({
@@ -26,7 +24,7 @@ function App() {
     setError("");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { location, timeOfDay, weather, windLevel } = formData;
 
     if (!location || !timeOfDay || !weather || !windLevel) {
@@ -35,16 +33,39 @@ function App() {
       return;
     }
 
-    const selectedSpot = fishingSpots.find((spot) => spot.id === location);
-
-    setRecommendation({
-      ...mockRecommendation,
-      selectedSpotName: selectedSpot?.name ?? "",
-      waterType: selectedSpot?.waterType ?? "",
-      targetFish: formData.targetFish || "No preference",
-    });
-
     setError("");
+
+    try {
+      const res = await fetch("/api/recommendation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: formData.location,
+          timeOfDay: formData.timeOfDay,
+          weather: formData.weather,
+          windLevel: formData.windLevel,
+          targetFish: formData.targetFish,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRecommendation(null);
+        setError(
+          data.error ??
+            "The server could not process your request. Check your selections."
+        );
+        return;
+      }
+
+      setRecommendation(data);
+    } catch {
+      setRecommendation(null);
+      setError(
+        "Could not reach the FishWise server. Start the backend (npm run dev in /backend) and try again."
+      );
+    }
   };
 
   return (

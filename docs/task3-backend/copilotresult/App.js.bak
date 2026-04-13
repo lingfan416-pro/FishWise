@@ -1,0 +1,277 @@
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// ============================================================================
+// LOCAL DATA
+// ============================================================================
+
+const fishingSpots = [
+  {
+    id: 'westhaven-harbor',
+    name: 'Westhaven Harbor',
+    waterType: 'saltwater'
+  },
+  {
+    id: 'mission-bay-wharf',
+    name: 'Mission Bay Wharf',
+    waterType: 'saltwater'
+  },
+  {
+    id: 'lake-riverside',
+    name: 'Lake Riverside',
+    waterType: 'freshwater'
+  },
+  {
+    id: 'rocky-shore-point',
+    name: 'Rocky Shore Point',
+    waterType: 'saltwater'
+  },
+  {
+    id: 'river-bend',
+    name: 'River Bend',
+    waterType: 'freshwater'
+  }
+];
+
+// Rule-based recommendation matrix
+// Key format: "waterType:targetFish:timeOfDay:weather:windLevel"
+// Falls back to more general rules if exact match not found
+const recommendationRules = [
+  // Saltwater morning recommendations
+  {
+    waterType: 'saltwater',
+    targetFish: 'snapper',
+    timeOfDay: 'morning',
+    weather: 'sunny',
+    windLevel: 'low',
+    recommendation: {
+      fish: 'Red Snapper',
+      bait: 'Live mullet or squid',
+      lineDepth: 'mid-depth',
+      sinkerWeight: 'medium',
+      floatType: 'none',
+      reason: 'Snapper feed actively in calm morning conditions. Mid-depth fishing targets their natural habitat.'
+    }
+  },
+  {
+    waterType: 'saltwater',
+    targetFish: 'kahawai',
+    timeOfDay: 'morning',
+    weather: 'overcast',
+    windLevel: 'medium',
+    recommendation: {
+      fish: 'Kahawai',
+      bait: 'Sardine or small mackerel',
+      lineDepth: 'shallow',
+      sinkerWeight: 'light',
+      floatType: 'standard bobber',
+      reason: 'Kahawai hunt near surface in overcast mornings. Light tackle and bobber setup works well.'
+    }
+  },
+  {
+    waterType: 'saltwater',
+    targetFish: 'trevally',
+    timeOfDay: 'afternoon',
+    weather: 'cloudy',
+    windLevel: 'high',
+    recommendation: {
+      fish: 'Trevally',
+      bait: 'Live baitfish or jig',
+      lineDepth: 'shallow',
+      sinkerWeight: 'medium',
+      floatType: 'none',
+      reason: 'High wind and cloudy skies activate trevally. They hunt in shallow water during these conditions.'
+    }
+  },
+  {
+    waterType: 'freshwater',
+    targetFish: 'trout',
+    timeOfDay: 'morning',
+    weather: 'sunny',
+    windLevel: 'low',
+    recommendation: {
+      fish: 'Rainbow Trout',
+      bait: 'Worm or small spinner',
+      lineDepth: 'shallow',
+      sinkerWeight: 'light',
+      floatType: 'standard bobber',
+      reason: 'Trout prefer cool conditions and feed early. Light tackle and bobber fishing ideal for rivers.'
+    }
+  },
+  {
+    waterType: 'freshwater',
+    targetFish: 'perch',
+    timeOfDay: 'afternoon',
+    weather: 'cloudy',
+    windLevel: 'low',
+    recommendation: {
+      fish: 'Yellow Perch',
+      bait: 'Small worm or minnow',
+      lineDepth: 'mid-depth',
+      sinkerWeight: 'light',
+      floatType: 'standard bobber',
+      reason: 'Perch are active in mid-water during cloudy afternoons. Use a bobber to keep bait visible.'
+    }
+  },
+  // Generic saltwater fallback
+  {
+    waterType: 'saltwater',
+    timeOfDay: 'morning',
+    weather: 'sunny',
+    recommendation: {
+      fish: 'Kahawai',
+      bait: 'Small live baitfish',
+      lineDepth: 'shallow',
+      sinkerWeight: 'light',
+      floatType: 'standard bobber',
+      reason: 'Morning sun brings fish to surface. Shallow bobber fishing is a proven saltwater technique.'
+    }
+  },
+  // Generic freshwater fallback
+  {
+    waterType: 'freshwater',
+    timeOfDay: 'morning',
+    weather: 'sunny',
+    recommendation: {
+      fish: 'Trout',
+      bait: 'Worm',
+      lineDepth: 'shallow',
+      sinkerWeight: 'light',
+      floatType: 'standard bobber',
+      reason: 'Morning is ideal for freshwater fishing. Light bobber setup works in most freshwater conditions.'
+    }
+  }
+];
+
+// Universal fallback
+const defaultRecommendation = {
+  fish: 'Bluegill (Panfish)',
+  bait: 'Small worm or cricket',
+  lineDepth: 'shallow',
+  sinkerWeight: 'light',
+  floatType: 'standard bobber',
+  reason: 'Bluegill are beginner-friendly and respond well to simple bobber rigs in almost all conditions.'
+};
+
+// ============================================================================
+// ROUTES
+// ============================================================================
+
+// GET /api/spots - Return all available fishing spots
+app.get('/api/spots', (req, res) => {
+  res.json({ spots: fishingSpots });
+});
+
+// POST /api/recommendation - Get a fishing recommendation
+app.post('/api/recommendation', (req, res) => {
+  const { location, timeOfDay, weather, windLevel, targetFish } = req.body;
+
+  // Validate required fields
+  if (!location || !timeOfDay || !weather || !windLevel) {
+    return res.status(400).json({
+      error: 'Missing required fields: location, timeOfDay, weather, windLevel'
+    });
+  }
+
+  // Find the location and get water type
+  const spot = fishingSpots.find((s) => s.id === location);
+  if (!spot) {
+    return res.status(400).json({ error: 'Invalid location' });
+  }
+
+  const waterType = spot.waterType;
+
+  // Find matching recommendation rule (best match first, then fallback)
+  let recommendation = findRecommendation(
+    waterType,
+    targetFish,
+    timeOfDay,
+    weather,
+    windLevel
+  );
+
+  res.json({
+    location: spot.name,
+    waterType,
+    timeOfDay,
+    weather,
+    windLevel,
+    targetFish: targetFish || 'Not specified',
+    recommendation
+  });
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// ============================================================================
+// RECOMMENDATION ENGINE
+// ============================================================================
+
+function findRecommendation(waterType, targetFish, timeOfDay, weather, windLevel) {
+  // Try exact match (all conditions match)
+  let rule = recommendationRules.find(
+    (r) =>
+      r.waterType === waterType &&
+      r.targetFish === targetFish &&
+      r.timeOfDay === timeOfDay &&
+      r.weather === weather &&
+      r.windLevel === windLevel
+  );
+  if (rule) return rule.recommendation;
+
+  // Try with target fish and water type (more permissive)
+  rule = recommendationRules.find(
+    (r) =>
+      r.waterType === waterType &&
+      r.targetFish === targetFish &&
+      r.timeOfDay === timeOfDay &&
+      r.weather === weather
+  );
+  if (rule) return rule.recommendation;
+
+  // Try with water type, time of day, and weather
+  rule = recommendationRules.find(
+    (r) =>
+      r.waterType === waterType &&
+      r.timeOfDay === timeOfDay &&
+      r.weather === weather
+  );
+  if (rule) return rule.recommendation;
+
+  // Try with just water type and time of day
+  rule = recommendationRules.find(
+    (r) => r.waterType === waterType && r.timeOfDay === timeOfDay
+  );
+  if (rule) return rule.recommendation;
+
+  // Return universal default if nothing matches
+  return defaultRecommendation;
+}
+
+// ============================================================================
+// ERROR HANDLING & SERVER START
+// ============================================================================
+
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`FishWise backend running on http://localhost:${PORT}`);
+});
+
+module.exports = app;
