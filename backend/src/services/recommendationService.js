@@ -97,7 +97,7 @@ function buildApiRecommendation({ spot, targetFish, recommendation, usedFallback
     lineDepth: recommendation.lineDepth,
     sinkerWeight: recommendation.sinkerWeight,
     floatType: recommendation.floatType,
-    explanation: recommendation.explanation,
+    //explanation: recommendation.explanation,
     reason: recommendation.explanation,
     usedFallback
   };
@@ -170,7 +170,7 @@ function buildFallbackRecommendation({ spot, targetFish, windLevel }) {
     lineDepth: baseSetup.lineDepth,
     sinkerWeight,
     floatType: baseSetup.floatType,
-    explanation: fallbackRecommendation.explanation,
+    //explanation: fallbackRecommendation.explanation,
     reason: fallbackRecommendation.reason,
     usedFallback: true
   };
