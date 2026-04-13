@@ -1,2 +1,8 @@
 # FishWise
-A Fishing Recommendation Assistant for casual fishers
+
+## Requirements:
+
+ChatGPT’s stronger requirement decisions
+Cursor’s cleaner requirement-note structure
+
+##

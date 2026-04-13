@@ -1,0 +1,5 @@
+{
+    "github.copilot.chat.alternateGeminiModelFPrompt.enabled": false,
+    "github.copilot.chat.agent.autoFix": true,
+    "github.copilot.editor.enableCodeActions": false
+}
